@@ -46,7 +46,7 @@ Managing contacts across iOS + Google Contacts is messy:
 
 | Layer       | Tech Used                        |
 |-------------|----------------------------------|
-| Messaging   | Meta WhatsApp Business (Twilio Sandbox) |
+| Messaging   | Meta WhatsApp Business (Twilio) |
 | NLP + OCR   | OpenAI GPT-4o                    |
 | Runtime     | Google Apps Script               |
 | Calendar    | Google Calendar API              |
@@ -68,7 +68,7 @@ Supports 3 input types:
 1. **Create a Google Apps Script Project**  
 2. **Enable APIs**: Calendar, People, Gmail  
 3. **Set Script Properties** for keys and tokens  
-4. **Deploy Webhook URL to Twilio Sandbox**  
+4. **Deploy Webhook URL to Twilio**  
 5. **Test via WhatsApp** — text, contact, or image
 
 _(Full instructions in the original README body above.)_
