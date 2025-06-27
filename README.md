@@ -75,6 +75,13 @@ _(Full instructions in the original README body above.)_
 
 ---
 
+## 🙏 Credits
+
+Special thanks to [Ido Lavi](https://www.linkedin.com/in/ido-lavi/)  
+for sharing the original problem, vision, and implementation of the initial version of this bot.
+
+---
+
 ## 📄 License
 
 MIT — use freely, contribute responsibly.
