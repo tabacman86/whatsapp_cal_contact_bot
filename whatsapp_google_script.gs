@@ -5,8 +5,7 @@ const CALENDAR_ID = SCRIPT_PROPERTIES.getProperty('CALENDAR_ID');
 const TWILIO_ACCOUNT_SID = SCRIPT_PROPERTIES.getProperty('TWILIO_ACCOUNT_SID');
 const TWILIO_AUTH_TOKEN = SCRIPT_PROPERTIES.getProperty('TWILIO_AUTH_TOKEN');
 const REPLY_TO_EMAIL = SCRIPT_PROPERTIES.getProperty('REPLY_TO_EMAIL');
-
-const FROM_WHATSAPP_NUMBER = 'whatsapp:+xxxxxxxxxxxxxxxx';
+const FROM_WHATSAPP_NUMBER = SCRIPT_PROPERTIES.getProperty('TWILIO_WHASATPP_NUM');
 
 function doPost(e) {
   const numMedia = parseInt(e.parameter.NumMedia || '0', 10);
