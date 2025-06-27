@@ -1,21 +1,52 @@
 # 📅 WhatsApp AI Assistant – Calendar & Contacts Bot
 
-This project is a smart WhatsApp bot that:
+A smart WhatsApp-based assistant that:
 
-- 🗓️ Adds events to your Google Calendar
-- 👤 Creates new contacts in Google Contacts
-- 📷 Supports image-based invites (OCR via GPT-4o)
-- 🧠 Understands Hebrew (calendar) and English (contacts)
+- 🗓️ Adds events to your shared Google Calendar
+- 👤 Creates contacts in your Google People account
+- 📷 Understands event details from image-based invites
+- 🧠 Supports Hebrew (calendar) + English (contacts)
+
+---
+
+## 🧩 Problems This Bot Solves
+
+### 1. Missed Calendar Events in Shared Households
+
+In a shared life (e.g., you and your spouse), forgetting to:
+- Add calendar invites
+- Share events
+- Handle casual event reminders (like vaccine appointments or family dinners)
+
+… often leads to missed commitments.
+
+> ✅ This bot lets anyone in the house WhatsApp the bot with:
+> - Hebrew text like: `"ביום שני בשעה 16:00 חיסון לילדים"`
+> - Or just an image of a printed/WhatsApp invitation
+
+It understands both and adds the event to your shared calendar.
+
+---
+
+### 2. Disorganized Contacts on iOS + Gmail
+
+Managing contacts across iOS + Google Contacts is messy:
+- Contacts aren’t synced well between services
+- New numbers aren’t labeled or grouped
+- You manually copy/paste from chats
+
+> ✅ This bot parses a structured message like:
+> `Add contact: Lior Katz, +972501234567, lior@example.com, AlphaTech, PromptCust`
+>
+> and adds the contact directly to your Google Contacts — clean, labeled, and synced to iOS.
 
 ---
 
 ## 🔗 Stack Overview
 
-This bot integrates the following services:
-
 | Layer       | Tech Used                        |
 |-------------|----------------------------------|
-| Messaging   | Meta WhatsApp Business (via Twilio Sandbox) |
+| Messaging   | Meta WhatsApp Business (Twilio Sandbox) |
 | NLP + OCR   | OpenAI GPT-4o                    |
 | Runtime     | Google Apps Script               |
 | Calendar    | Google Calendar API              |
@@ -25,48 +56,25 @@ This bot integrates the following services:
 
 ## 💡 Bot Behavior
 
-The bot supports **3 input types**:
-- 📝 Hebrew text: `"ביום שישי ב-16:00 חיסון לילדים"` → adds calendar event
-- 🧾 Image of invitation (e.g. birthday invite) → GPT-4o OCR + calendar event
-- 👤 Contact request: `"Add contact: John Doe, +972..., john@..., Acme Ltd, VIP"` → creates Google Contact
+Supports 3 input types:
+- 📝 Hebrew text → adds calendar event
+- 📷 Image of invitation → OCR + calendar event
+- 👤 English contact command → creates contact
 
 ---
 
 ## 🚀 Setup Guide
 
-### 1. Create a Google Apps Script Project
-- Open [script.new](https://script.new)
-- Paste in the contents of `combined.gs`
-- Rename to something like `WhatsApp Assistant`
+1. **Create a Google Apps Script Project**  
+2. **Enable APIs**: Calendar, People, Gmail  
+3. **Set Script Properties** for keys and tokens  
+4. **Deploy Webhook URL to Twilio Sandbox**  
+5. **Test via WhatsApp** — text, contact, or image
+
+_(Full instructions in the original README body above.)_
 
 ---
 
-### 2. Enable APIs
-In your Apps Script project:
-- Enable services:
-  - Google Calendar API
-  - Google People API
-  - Gmail API
-- Also go to **Resources → Advanced Google Services** and enable:
-  - People API
+## 📄 License
 
----
-
-### 3. Add Script Properties
-Go to **Project Settings → Script Properties** and add the following:
-
-| Key                  | Value                      |
-|----------------------|----------------------------|
-| `OPENAI_API_KEY`     | Your OpenAI API Key        |
-| `CALENDAR_ID`        | Your Google Calendar ID    |
-| `TWILIO_ACCOUNT_SID` | Your Twilio SID            |
-| `TWILIO_AUTH_TOKEN`  | Your Twilio Token          |
-| `REPLY_TO_EMAIL`     | Gmail address for confirms |
-
----
-
-### 4. Set Up Twilio WhatsApp Sandbox
-
-In [Twilio Console](https://console.twilio.com/):
-- Go to **Messaging → WhatsApp → Sandbox**
-- Set the **Webhook URL** (POST) to your script's deployment URL:
+MIT — use freely, contribute responsibly.
