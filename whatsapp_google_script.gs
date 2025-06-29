@@ -8,24 +8,48 @@ const REPLY_TO_EMAIL = SCRIPT_PROPERTIES.getProperty('REPLY_TO_EMAIL');
 const FROM_WHATSAPP_NUMBER = SCRIPT_PROPERTIES.getProperty('TWILIO_WHASATPP_NUM');
 
 function doPost(e) {
+  const from = e.parameter.From || '';
+  const ALLOWED_NUMBERS = [ 'whatsapp:+972xxxxxxxxx', 'whatsapp:+972xxxxxxxxxx'];
+
+  if (!ALLOWED_NUMBERS.includes(from)) {
+  sendWhatsAppReply(e.parameter.From , "my name is inigo montoya, you killed my father, prepare to die")
+  return
+  }
+
+
   const numMedia = parseInt(e.parameter.NumMedia || '0', 10);
   const mediaUrl = e.parameter.MediaUrl0;
   const mediaType = e.parameter.MediaContentType0;
 
   const body = (e.parameter.Body || '').trim();
-  const from = e.parameter.From || '';
+  // const from = e.parameter.From || '';
   const now = new Date();
   let reply;
 
   if (body.toLowerCase().startsWith('add contact:')) {
-    reply = handleContactRequest(body.replace(/^add contact:/i, '').trim(), from);
-  } else if (body && (structured = extractEventDataFromOpenAI(body, now))) {
-    reply = handleCalendarStructured(structured);
-  } else if (numMedia > 0 && mediaType.startsWith("image/")) {
-    reply = handleImageMessageWithoutAuth(mediaUrl, mediaType, from);
+  reply = handleContactRequest(body.replace(/^add contact:/i, '').trim(), from);
+
+} else if (body) {
+  const structured = extractEventDataFromOpenAI(body, now);
+  
+  if (structured) {
+    // 🔍 Verify event validity using GPT
+    const isLegit = verifyEventWithGPT(structured);
+    if (isLegit) {
+      reply = handleCalendarStructured(structured);
+    } else {
+      reply = `🛑 זה לא נראה כמו פגישה אמיתית ליומן.\n\nנסה בסגנון:\n"ביום רביעי ב-14:00 פגישה עם רופא שיניים"`;
+    }
   } else {
-    reply = `⛔ I couldn’t understand your message.\nTry:\n"Meeting with Dana on Friday at 10am"\nor send a photo of the invite.`;
+    reply = `⛔ לא הבנתי כל כך. אפשר לשלוח שוב?\nדוגמה: "ביום חמישי ב-15:30 יש חיסון לילדים"`;
   }
+
+} else if (numMedia > 0 && mediaType.startsWith("image/")) {
+  reply = handleImageMessageWithoutAuth(mediaUrl, mediaType, from);
+
+} else {
+  reply = `⛔ I couldn’t understand your message.\nTry:\n"Meeting with Dana on Friday at 10am"\nor send a photo of the invite.`;
+}
 
   sendWhatsAppReply(from, reply);
   return HtmlService.createHtmlOutput("OK");
@@ -137,11 +161,28 @@ function handleImageMessageWithoutAuth(mediaUrl, mediaType, from) {
 
 function extractEventDataFromOpenAI(text, referenceDate) {
   const referenceDateStr = Utilities.formatDate(referenceDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
-  const prompt = `אתה עוזר שממיר הודעות בעברית על פגישות לאירועים בלוח שנה.\nהיום הוא: ${referenceDateStr}\nפרש תאריכים יחסיים כמו \"שישי הבא\", \"מחר\", וכו' בהתאם לתאריך הזה.\nהחזר תשובה כ-JSON בפורמט הבא:\n{\n  \"title\": \"string\",\n  \"description\": \"string\",\n  \"startDateTime\": \"YYYY-MM-DDTHH:MM:SS+03:00\",\n  \"endDateTime\": \"YYYY-MM-DDTHH:MM:SS+03:00\"\n}\nחזור רק על האובייקט JSON, ללא טקסט נוסף.\nההודעה:\n\"${text}\"`;
+  const systemPrompt = `אתה עוזר שממיר הודעות בעברית על פגישות לאירועים בלוח שנה.
+היום הוא: ${referenceDateStr}
+פרש תאריכים יחסיים כמו "שישי הבא", "מחר", וכו' בהתאם לתאריך הזה.
+
+אם ההודעה לא כוללת שעת התחלה ברורה — אל תנחש שעה. החזר את המילה: null
+
+אם ההודעה כן מתארת פגישה אמיתית, החזר תשובה כ-JSON בפורמט הבא:
+{
+  "title": "string",
+  "description": "string",
+  "startDateTime": "YYYY-MM-DDTHH:MM:SS+03:00",
+  "endDateTime": "YYYY-MM-DDTHH:MM:SS+03:00"
+}
+
+חזור רק על האובייקט JSON או על null, ללא טקסט נוסף.
+
+ההודעה:
+"${text}"`;
 
   const payload = {
-    model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: prompt }],
+    model: "gpt-4o",
+    messages: [{ role: "system", content: systemPrompt}, { role: "user", content: text}],
     temperature: 0.2
   };
 
@@ -166,19 +207,6 @@ function extractEventDataFromOpenAI(text, referenceDate) {
 }
 
 function handleCalendarStructured(structured) {
-  if (!structured.title || !structured.startDateTime || !structured.endDateTime) {
-    return `⛔ לא הבנתי שמדובר בפגישה עם זמן ברור. נסה לנסח שוב:\n\"לדוגמה: ביום ראשון ב-15:00 יש פגישה עם יוסי\"`;
-  }
-
-  const badKeywords = [
-    "מתכון", "שאלה", "רעיון", "עזרה", "בדיחה", "איך", "אפשר", "מישהו יודע",
-    "מה זה", "יש לך", "סיפור", "בדקתם", "מנוי", "קופון", "בדיקה"
-  ];
-  const title = structured.title.toLowerCase();
-
-  if (badKeywords.some(k => title.includes(k))) {
-    return `🛑 זה לא נראה כמו פגישה או תזכורת אמיתית.\n\nנסה בסגנון:\n\"ביום רביעי ב-14:00 פגישה עם רופא שיניים\"`;
-  }
 
   try {
     createCalendarEvent(structured);
@@ -189,6 +217,62 @@ function handleCalendarStructured(structured) {
     return `⚠️ הייתה שגיאה בעת הוספת האירוע ליומן. נסה שוב מאוחר יותר.`;
   }
 }
+
+function verifyEventWithGPT(structured) {
+  const systemPrompt = `
+אתה מקבל אובייקט שמייצג אירוע בלוח שנה, ומטרתך להחליט האם מדובר בפגישה או תזכורת אמיתית שמתאימה להוספה ליומן.
+
+החזר רק את המילה:
+- true — אם מדובר באירוע ממשי כמו פגישה, תור, טיסה, חיסון, יום הולדת, פגישה עם מישהו וכו'.
+- false — אם הטקסט נראה כמו שאלה, בקשה כללית, בדיחה, שיחה כללית, מילה בודדת, או משהו שאינו דורש תזכורת ביומן.
+
+דוגמאות חוקיות:
+- "קבע פגישה מחר ב9:00 עם מורן בבית"
+- "ביום שלישי ב-14:00 יש חיסון לילדים"
+- "ארוחת ערב אצל ההורים בשבת"
+
+דוגמאות לא חוקיות:
+- "מה דעתך על מתכון?"
+- "מישהו יודע איך לסדר את המדפסת?"
+- "חחח מצחיק"
+
+הייה מאוד ברור. החזר רק: true או false.
+`;
+
+  const userPrompt = `האירוע:
+${JSON.stringify(structured, null, 2)}
+
+האם מדובר באירוע מתאים ליומן?`;
+
+  const payload = {
+    model: "gpt-3.5-turbo",
+    temperature: 0,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ]
+  };
+
+  try {
+    const response = UrlFetchApp.fetch("https://api.openai.com/v1/chat/completions", {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`
+      },
+      payload: JSON.stringify(payload)
+    });
+
+    const json = JSON.parse(response.getContentText());
+    const reply = json.choices[0].message.content.trim().toLowerCase();
+
+    return reply.includes("true");
+  } catch (err) {
+    Logger.log("Failed GPT event validation: " + err);
+    return true; // fallback safe
+  }
+}
+
 
 function createCalendarEvent(data) {
   const start = new Date(data.startDateTime);
